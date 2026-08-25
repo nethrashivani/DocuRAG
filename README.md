@@ -1,6 +1,15 @@
-# Free RAG System (Harry Potter PDF)
+# Free RAG System (PDF Q&A)
 
-Zero-cost RAG pipeline: local free embeddings + Chroma vector DB + Groq's free Llama 3 for answers.
+A zero-cost Retrieval-Augmented Generation (RAG) pipeline: ask questions
+about any PDF and get answers grounded strictly in that document — no paid
+API required.
+
+**Stack:**
+- **Chunking + retrieval:** LangChain + Chroma (local vector database)
+- **Embeddings:** HuggingFace `all-MiniLM-L6-v2` (free, runs locally, no key needed)
+- **Generation:** Groq's free-tier API running `openai/gpt-oss-20b`
+- **Mode:** Strict — the model answers only from retrieved PDF content, and
+  says so plainly if the answer isn't in the document.
 
 ## 1. Install dependencies
 
@@ -22,7 +31,7 @@ Copy `.env.example` to `.env`:
 cp .env.example .env
 ```
 
-Open `.env` and paste your real key:
+Open `.env` and paste your real key — **no quotes, no spaces around the `=`**:
 
 ```
 GROQ_API_KEY=gsk_your_actual_key_here
@@ -30,8 +39,8 @@ GROQ_API_KEY=gsk_your_actual_key_here
 
 ## 4. Put your PDF in place
 
-Your PDF should already be in `data/books/`. To add more PDFs, just drop them
-into that same folder — the script picks up every `.pdf` file there.
+Drop your PDF(s) into `data/books/` — the script picks up every `.pdf` file
+in that folder.
 
 ## 5. Build the vector database
 
@@ -39,9 +48,12 @@ into that same folder — the script picks up every `.pdf` file there.
 python create_database.py
 ```
 
-This reads the PDF, splits it into chunks, embeds each chunk locally (free,
-no internet needed for this step after the model downloads once), and saves
-everything into a `chroma/` folder.
+This reads the PDF(s), splits the text into chunks, embeds each chunk
+locally (free — no internet needed for this step after the embedding model
+downloads once, ~90MB), and saves everything into a `chroma/` folder.
+
+Re-running this command wipes and rebuilds `chroma/` from scratch, so it's
+safe to re-run any time your source PDFs change.
 
 ## 6. Ask questions
 
@@ -49,15 +61,32 @@ everything into a `chroma/` folder.
 python query_data.py "Who is Harry Potter's best friend?"
 ```
 
-This step needs internet (to call Groq) but is still free within Groq's
-generous free tier.
+This step needs internet (to call Groq) but stays free within Groq's
+generous free tier. The retrieved chunks and their similarity scores print
+first for transparency, then the final answer prints in **bright green** so
+it's easy to spot.
+
+## Troubleshooting
+
+- **`ModuleNotFoundError: No module named 'langchain.text_splitter'`** —
+  newer LangChain versions moved this to a separate package. Already fixed
+  in this repo's code (`langchain_text_splitters` instead).
+- **`Unable to find matching results in the document`** even for obvious
+  questions — this was a threshold bug: the old relevance-score cutoff
+  (0.5) was tuned for OpenAI's embeddings and doesn't translate to the free
+  HuggingFace embedding model's score range. Fixed by switching to raw
+  distance scores with no arbitrary cutoff.
+- **`groq.NotFoundError: model ... does not exist`** — Groq periodically
+  retires models. This repo currently uses `openai/gpt-oss-20b`. If that
+  ever gets retired too, check https://console.groq.com/docs/models for
+  the current list and update the `model=` line in `query_data.py`.
+- **`KeyError: 'GROQ_API_KEY'`** — means `.env` wasn't found or is empty.
+  Make sure the file is named exactly `.env` (not `.env.example`), sits in
+  the same folder as `query_data.py`, and has no quotes around the key.
 
 ## Notes
 
-- Strict mode is on: answers come only from the PDF's content. If the
-  document doesn't cover something, the model will say so instead of
-  guessing.
-- The embedding model (`all-MiniLM-L6-v2`) downloads once (~90MB) the first
-  time you run `create_database.py`, then it's cached locally.
-- If you re-run `create_database.py`, it wipes and rebuilds the `chroma/`
-  folder from scratch.
+- The embedding model downloads once, then runs fully offline afterward.
+- Every question re-embeds your query and searches the saved database — you
+  don't need to rebuild the database between questions, only when your
+  source PDFs change.
