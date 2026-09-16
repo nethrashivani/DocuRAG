@@ -1,40 +1,39 @@
-````markdown
 # Document RAG Q&A System
 
 A Retrieval-Augmented Generation (RAG) system that allows users to use their own PDF documents, create a searchable vector database from their content, and ask questions based on the information contained in those documents.
 
 The system processes PDF documents, splits them into smaller chunks, generates vector embeddings, stores them in ChromaDB, retrieves the most relevant content for a user query, and uses an LLM to generate a context-grounded answer.
 
-The project is document-agnostic and can be used with different PDFs without changing the application code.
+The project is document-agnostic and can be used with different PDF documents without changing the application code.
 
 ## Features
 
-- Supports single or multiple PDF documents
-- Allows users to replace the sample document with their own PDFs
-- Automatic document text extraction
-- Document chunking with overlapping sections
-- Local semantic embeddings using Hugging Face
-- Local vector storage using ChromaDB
-- Similarity-based document retrieval
-- LLM-powered question answering using Groq
-- Context-grounded responses
-- Prevents the model from relying on information outside the retrieved document context
-- Rebuilds the vector database whenever documents are changed
+* Supports single or multiple PDF documents
+* Allows users to replace the sample document with their own PDFs
+* Automatic PDF text extraction
+* Document chunking with overlapping sections
+* Local semantic embeddings using Hugging Face
+* Local vector storage using ChromaDB
+* Similarity-based document retrieval
+* LLM-powered question answering using Groq
+* Context-grounded responses
+* Prevents the model from relying on information outside the retrieved document context
+* Rebuilds the vector database when source documents are changed
 
 ## Tech Stack
 
-- **Language:** Python
-- **RAG Framework:** LangChain
-- **Document Processing:** PyPDF
-- **Embeddings:** Hugging Face `all-MiniLM-L6-v2`
-- **Vector Database:** ChromaDB
-- **LLM:** Groq `openai/gpt-oss-20b`
-- **Environment Management:** python-dotenv
+* **Language:** Python
+* **RAG Framework:** LangChain
+* **Document Processing:** PyPDF
+* **Embeddings:** Hugging Face `all-MiniLM-L6-v2`
+* **Vector Database:** ChromaDB
+* **LLM:** Groq `openai/gpt-oss-20b`
+* **Environment Management:** python-dotenv
 
 ## Project Structure
 
 ```text
-document-rag/
+hogwarts-rag/
 │
 ├── data/
 │   └── books/
@@ -45,10 +44,9 @@ document-rag/
 ├── create_database.py
 ├── query_data.py
 ├── requirements.txt
-├── .env
 ├── .gitignore
 └── README.md
-````
+```
 
 ## How It Works
 
@@ -93,21 +91,21 @@ pip install -r requirements.txt
 
 ### 3. Configure the Groq API Key
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root and add your Groq API key:
 
 ```env
 GROQ_API_KEY=your_api_key_here
 ```
 
-The API key is used to access the Groq-hosted LLM for answer generation.
+The API key is used for LLM inference through Groq.
 
-Make sure the `.env` file is not committed to the repository.
+Make sure `.env` is not committed to the repository.
 
-### 4. Add Your Own PDF Documents
+### 4. Add Your PDF Documents
 
-The project is **not limited to the sample Harry Potter document**.
+The system is **not limited to the sample Harry Potter document**.
 
-You can use the system with your own PDF documents by placing them inside:
+You can use your own PDF documents by placing them inside:
 
 ```text
 data/books/
@@ -122,7 +120,7 @@ data/books/
 └── python-notes.pdf
 ```
 
-You can use:
+The system can be used with:
 
 * Books
 * Research papers
@@ -133,7 +131,7 @@ You can use:
 * Project documentation
 * Other text-based PDF documents
 
-The system automatically processes all PDF files present in the directory.
+Multiple PDFs can be placed in the directory and processed together.
 
 No changes to the Python code are required when switching to different documents.
 
@@ -145,21 +143,19 @@ After adding your documents, run:
 python create_database.py
 ```
 
-This step:
+This process:
 
 1. Reads the PDF documents from `data/books/`
 2. Extracts their text
 3. Splits the text into smaller overlapping chunks
 4. Generates embeddings for each chunk
-5. Stores the embeddings in ChromaDB
+5. Stores the embeddings and document content in ChromaDB
 
-The resulting vector database is stored in:
+The vector database is stored locally in:
 
 ```text
 chroma/
 ```
-
-Whenever you add, remove, or replace PDF documents, run `create_database.py` again to rebuild the vector database using the updated documents.
 
 ### 6. Query Your Documents
 
@@ -175,59 +171,13 @@ For example:
 python query_data.py "What is this document about?"
 ```
 
-Or:
+The system retrieves the most relevant sections from the indexed documents and uses them as context for generating the answer.
 
-```bash
-python query_data.py "What are the main concepts discussed in the document?"
-```
+## Using Your Own Documents
 
-The system retrieves the most relevant sections from your documents and uses them as context for generating the answer.
+The same pipeline can be reused for completely different documents.
 
-## Example
-
-The repository may contain a sample Harry Potter PDF, but it is only used as example data.
-
-For example:
-
-```bash
-python query_data.py "Who is Harry Potter's best friend?"
-```
-
-If you replace the sample PDF with a machine learning textbook, you can instead ask:
-
-```bash
-python query_data.py "What is supervised learning?"
-```
-
-If you replace it with a research paper, you can ask questions about that paper:
-
-```bash
-python query_data.py "What methodology was used in the study?"
-```
-
-The same RAG pipeline works with each document.
-
-## Using Different Documents
-
-To use a completely different set of documents:
-
-```text
-1. Remove or replace the existing PDFs
-          ↓
-2. Add your own PDFs to data/books/
-          ↓
-3. Run create_database.py
-          ↓
-4. Documents are chunked
-          ↓
-5. New embeddings are generated
-          ↓
-6. ChromaDB is rebuilt
-          ↓
-7. Ask questions using query_data.py
-```
-
-For example:
+For example, you can replace the sample document with:
 
 ```text
 data/books/
@@ -236,19 +186,63 @@ data/books/
 └── policies.pdf
 ```
 
-Then:
+Then rebuild the database:
 
 ```bash
 python create_database.py
 ```
 
-After the database is rebuilt:
+After the documents are processed, you can ask:
 
 ```bash
 python query_data.py "What is the leave policy?"
 ```
 
-No changes to the application code are required.
+The system will retrieve relevant sections from the newly added documents and generate an answer based on that content.
+
+The document workflow is:
+
+```text
+Add / Replace PDF
+       ↓
+Run create_database.py
+       ↓
+Extract Text
+       ↓
+Split into Chunks
+       ↓
+Generate Embeddings
+       ↓
+Store in ChromaDB
+       ↓
+Query the Documents
+```
+
+No application code changes are required when changing the documents.
+
+## Example
+
+The repository may contain a sample Harry Potter PDF for demonstration purposes.
+
+For example:
+
+```bash
+python query_data.py "Who is Harry Potter's best friend?"
+```
+
+The sample document can be replaced with another PDF and the same application can then be used to query that document.
+
+For example, with a machine learning textbook:
+
+```bash
+python query_data.py "What is supervised learning?"
+```
+
+Or with a research paper:
+
+```bash
+python query_data.py "What methodology was used in the study?"
+```
 
 ## RAG Implementation
 
@@ -256,7 +250,7 @@ No changes to the application code are required.
 
 PDF documents are loaded using PyPDF and converted into text.
 
-The extracted content is then divided into smaller overlapping chunks using LangChain's text splitter.
+The extracted content is divided into smaller overlapping chunks using LangChain's text splitter.
 
 ### Embedding Generation
 
@@ -286,13 +280,13 @@ The model is instructed to answer using the retrieved document context and avoid
 
 ## Context-Grounded Responses
 
-The system is designed to keep answers grounded in the retrieved document content.
+The system is designed to keep responses grounded in the retrieved document content.
 
 If the retrieved information does not contain enough information to answer a question, the model is instructed to indicate that the answer cannot be determined from the available document context rather than relying on outside knowledge.
 
 ## Updating Documents
 
-Whenever the source PDFs change, rebuild the vector database:
+Whenever the source PDFs are added, removed, or changed, rebuild the vector database:
 
 ```bash
 python create_database.py
@@ -304,9 +298,9 @@ The existing ChromaDB data is cleared and rebuilt using the current PDFs in:
 data/books/
 ```
 
-You do not need to rebuild the database for every question.
+The database does not need to be rebuilt for every question.
 
-The database only needs to be rebuilt when the source documents change.
+It only needs to be rebuilt when the source documents change.
 
 ## Environment Variables
 
@@ -317,8 +311,8 @@ The database only needs to be rebuilt when the source documents change.
 ## Requirements
 
 * Python 3.11+
-* Internet connection for Groq API requests
 * Groq API key
+* Internet connection for Groq API requests
 * One or more text-based PDF documents
 
 The embedding model runs locally after its initial download.
@@ -326,7 +320,7 @@ The embedding model runs locally after its initial download.
 ## Future Improvements
 
 * Web-based user interface
-* Drag-and-drop document uploads
+* Document upload functionality
 * Conversation history
 * Source citations
 * Streaming responses
@@ -338,7 +332,3 @@ The embedding model runs locally after its initial download.
 ## Author
 
 **Nethrashivani**
-
-GitHub: [https://github.com/nethrashivani](https://github.com/nethrashivani)
-
-```
